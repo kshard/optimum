@@ -33,9 +33,25 @@ var (
 
 var uploadCmd = &cobra.Command{
 	Use:   "upload",
-	Short: "tbd",
+	Short: "Upload data.",
 	Long: `
-tbd
+The client supports only non-real-time data ingestion (batch intake),
+which consists of two phases: data upload followed by a commit.
+
+The client supports the following data formats, which vary depending on the
+data structure algorithms used: 
+
+
+1. Hierarchical Navigable Small World
+
+Textual formats are required to represent embedding vectors, with each line
+consisting of a key (not exceeding 32 bytes) and a vector.
+
+  key -0.37604 0.24116 ... -0.26098 -0.0079604
+
+`,
+	Example: `
+optimum upload -u $HOST -c class:cask path/to/data.txt
 `,
 	SilenceUsage: true,
 	Args:         cobra.ExactArgs(1),

@@ -32,9 +32,41 @@ var (
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "create data collection",
+	Short: "Create new data structure.",
 	Long: `
-tbd
+Create new cask (data structure) on the cloud. Specify data structure
+algorithm (class) and a unique name along with configuration properties.
+The configuration properties are supplied via json file.
+
+See below the list of supported algorithms:
+
+
+1. Hierarchical Navigable Small World
+
+The algorithm "hnsw" is an efficient and scalable method for approximate nearest
+neighbor search in high-dimensional spaces.
+
+Config algorithm through primary parameters: 
+  - "M" and "M0" controls the maximum number of connections per node, balancing
+    between memory usage and search efficiency.
+
+  - "efConstruction" determines the number of candidate nodes evaluated during
+    graph construction, influencing both the construction time and the accuracy
+    of the graph.
+
+  - "surface" is vector distance function.
+
+Example configuration:	
+  {
+    "m":  8,                // number in range of [4, 1024]
+    "m0": 64,               // number in range of [4, 1024]
+    "efConstruction": 200,  // number in range of [200, 1000]
+    "surface": "cosine"     // enum {"cosine", "euclidean"}
+  }
+`,
+	Example: `
+optimum create -u $HOST -c class:cask -j path/to/config.json
+optimum create -u $HOST -r $ROLE -c class:cask -j path/to/config.json
 `,
 	SilenceUsage: true,
 	RunE:         create,

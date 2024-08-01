@@ -24,9 +24,24 @@ func init() {
 
 var queryCmd = &cobra.Command{
 	Use:   "query",
-	Short: "tbd",
+	Short: "Query data structure",
 	Long: `
-tbd
+Query data structure. Use command for basic operations only. The client supports
+the following query formats, which vary depending on the data structure
+algorithms used: 
+
+
+1. Hierarchical Navigable Small World
+
+The query is equivalent to data format used for writing. Textual formats are
+required to represent embedding vectors, with each line consisting of a key
+(query ID) and a vector.
+
+  query -0.37604 0.24116 ... -0.26098 -0.0079604
+
+`,
+	Example: `
+optimum query -u $HOST -c class:cask path/to/query.txt
 `,
 	SilenceUsage: true,
 	Args:         cobra.ExactArgs(1),

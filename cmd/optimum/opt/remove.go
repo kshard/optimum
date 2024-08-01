@@ -22,9 +22,13 @@ func init() {
 
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: "tbd",
+	Short: "Remove data collection.",
 	Long: `
-tbd
+Permanently remove data collection. The operation is irreversible and results
+in the permanent destruction of all data with in the collection.
+`,
+	Example: `
+optimum remove -u $HOST -c class:cask
 `,
 	SilenceUsage: true,
 	RunE:         remove,

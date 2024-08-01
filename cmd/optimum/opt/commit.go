@@ -25,9 +25,14 @@ func init() {
 
 var commitCmd = &cobra.Command{
 	Use:   "commit",
-	Short: "tbd",
+	Short: "Commit upload data.",
 	Long: `
-tbd
+The client supports only non-real-time data ingestion (batch intake),
+which consists of two phases: data upload followed by a commit. This command 
+commits previously uploaded data.
+`,
+	Example: `
+optimum commit -u $HOST -c class:cask
 `,
 	SilenceUsage: true,
 	RunE:         commit,

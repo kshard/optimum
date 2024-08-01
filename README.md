@@ -1,7 +1,7 @@
 <p align="center">
   <img src="./doc/optimum.svg" height="240" />
   <h3 align="center">optimum</h3>
-  <p align="center"><strong>client for managing data collections</strong></p>
+  <p align="center"><strong>client for managing cloud data structures</strong></p>
 
   <p align="center">
     <!-- Version -->
@@ -33,7 +33,7 @@
 
 --- 
 
-The library is provides Golang client and command line utility for managing data collection.
+The library is provides Golang client and command line utility for managing cloud data structures.
 
 ## Getting Started
 
@@ -63,8 +63,14 @@ go install github.com/kshard/optimum/cmd/optimum@latest
 
 ### Getting access
 
-The command line utility requires access to remote server that provisions data structures for you. Contact your provided for details.
+The command line utility requires access to remote server that provisions and operates data structures for you. Contact your provided for details.
 
+It is recommended to config environment variables for client usage:
+
+```bash
+export HOST=https://example.com
+export ROLE=arn:aws:iam::000000000000:role/example-access-role
+```
 
 
 ### Create data collection

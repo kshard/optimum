@@ -23,9 +23,20 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "tbd",
+	Short: "List data structures.",
 	Long: `
-tbd
+List all data casks provisioned to your account. The utility fetches
+collections organized by their respective data structure algorithms.
+
+Each cask is one of the state:
+- UNAVAILABLE: the cask is not ready for use.
+- PENDING: deployment or housekeeping is going on.
+- ACTIVE: the cask is active, last deployment successfully completed.
+- FAILED: the last deployment is failed.
+`,
+	Example: `
+optimum list -u $HOST -c class
+optimum list -u $HOST -r $ROLE -c class
 `,
 	SilenceUsage: true,
 	RunE:         list,
