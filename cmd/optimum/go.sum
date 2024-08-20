@@ -47,8 +47,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213/go.mod h1:vNUNkEQ1e29fT/6vq2aBdFsgNPmy8qMdSay1npru+Sw=
-github.com/kshard/embeddings v0.0.3 h1:gtFTT7RyzfVrMyKNo9ZgvVdu1mdhmI4UjEiQbCBdjVY=
-github.com/kshard/embeddings v0.0.3/go.mod h1:S+rTzXPtBSXrtiXoVzOkLhcsPMHIpbucTNSksJ9F3uE=
+github.com/kshard/optimum v0.0.1 h1:/mTp2tnfEbuh2n2LpmaTB8ttF9CCmafD6NNiHQ9nknQ=
+github.com/kshard/optimum v0.0.1/go.mod h1:fuVjfji9QLFKJ08DidmhjHUzhMtjrLwpEvGWYqz24z8=
 github.com/kshard/wreck v0.0.1 h1:U/vucQnpA7IgIG01xiq/6/cy57lhn3T/vQXUI4lOXSU=
 github.com/kshard/wreck v0.0.1/go.mod h1:rT4tAEOaZhozTekFxTUhclfu4mLnqFgdrgrMtXw+KAI=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=

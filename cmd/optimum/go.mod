@@ -2,8 +2,6 @@ module github.com/kshard/optimum/cmd/optimum
 
 go 1.22.2
 
-replace github.com/kshard/optimum => ../../
-
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
@@ -12,7 +10,7 @@ require (
 	github.com/fogfish/curie v1.8.2
 	github.com/fogfish/gurl/v2 v2.9.0
 	github.com/fogfish/gurl/x/awsapi v0.0.2
-	github.com/kshard/optimum v0.0.0-00010101000000-000000000000
+	github.com/kshard/optimum v0.0.1
 	github.com/schollz/progressbar/v3 v3.14.5
 	github.com/spf13/cobra v1.8.1
 )
@@ -31,7 +29,6 @@ require (
 	github.com/fogfish/schemaorg v1.22.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kshard/embeddings v0.0.3 // indirect
 	github.com/kshard/wreck v0.0.1 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
