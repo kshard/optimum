@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -21,7 +20,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fogfish/gurl/v2/http"
 	"github.com/fogfish/gurl/x/awsapi"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -36,14 +34,14 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&host, "url", "u", "", "url to remote data structure management server")
-	rootCmd.PersistentFlags().StringVarP(&cask, "cask", "c", "", "cask identity in the format (class:name), class defines data structure algorithm, followed by a unique name after :.")
+	rootCmd.PersistentFlags().StringVarP(&name, "name", "n", "", "unique name of data structure, use only alpha-numeric symbols.")
 	rootCmd.PersistentFlags().StringVarP(&role, "role", "r", "", "access identity, ARN of AWS IAM Role")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 }
 
 var (
 	host  string
-	cask  string
+	name  string
 	role  string
 	debug bool
 )
@@ -73,6 +71,8 @@ It is recommended to config environment variables for client usage:
 func root(cmd *cobra.Command, args []string) {
 	cmd.Help()
 }
+
+//------------------------------------------------------------------------------
 
 func stack() (http.Stack, error) {
 	opts := []http.Config{}
@@ -104,29 +104,4 @@ func stack() (http.Stack, error) {
 	}
 
 	return http.New(opts...), nil
-}
-
-const IDLE_TIME = 20 * time.Second
-
-func spinner(bar *progressbar.ProgressBar, f func() error) error {
-	ch := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			case <-ch:
-				return
-			default:
-				bar.Add(1)
-				time.Sleep(40 * time.Millisecond)
-			}
-		}
-	}()
-
-	err := f()
-
-	ch <- false
-	bar.Finish()
-
-	return err
 }

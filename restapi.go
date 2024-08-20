@@ -31,8 +31,8 @@ func New(stack http.Stack, host string) *Client {
 	}
 }
 
-func (api *Client) Casks(ctx context.Context, schema string) (*Casks, error) {
-	return http.IO[Casks](
+func (api *Client) Casks(ctx context.Context, schema string) (*Instances, error) {
+	return http.IO[Instances](
 		api.WithContext(ctx),
 		http.GET(
 			ø.URI("%s/ds/%s", api.host, schema),

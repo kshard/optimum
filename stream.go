@@ -9,12 +9,16 @@
 package optimum
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/sha1"
 
 	"github.com/fogfish/curie"
 	"github.com/fogfish/gurl/v2/http"
 	ƒ "github.com/fogfish/gurl/v2/http/recv"
 	ø "github.com/fogfish/gurl/v2/http/send"
+	"github.com/kshard/wreck"
 )
 
 // Stream client
@@ -24,54 +28,106 @@ type Stream struct {
 	host ø.Authority
 	cask curie.IRI
 
-	chunk    int
-	segement segment
-}
-
-type segment struct {
-	Bag []Vector `json:"bag"`
+	chunk int
+	buf   *bytes.Buffer
+	zip   *gzip.Writer
+	seq   *wreck.Writer[float32]
 }
 
 func NewStream(stack http.Stack, host string, cask curie.IRI, chunk int) *Stream {
-	return &Stream{
+	stream := &Stream{
 		Stack: stack,
 		host:  ø.Authority(host),
 		cask:  cask,
-
-		chunk:    chunk,
-		segement: segment{Bag: make([]Vector, 0)},
+		chunk: chunk,
 	}
+
+	stream.buf = &bytes.Buffer{}
+	stream.zip = gzip.NewWriter(stream.buf)
+	stream.seq = wreck.NewWriter[float32](stream.zip)
+
+	return stream
 }
 
 // Write vector
-func (api *Stream) Write(ctx context.Context, v Vector) error {
-	api.segement.Bag = append(api.segement.Bag, v)
+func (stream *Stream) Write(ctx context.Context, v Vector) error {
+	if err := stream.seq.Write(v.UniqueKey, v.SortKey, v.Vec); err != nil {
+		return err
+	}
 
-	if len(api.segement.Bag) >= api.chunk {
-		return api.Sync(ctx)
+	if stream.buf.Len() >= stream.chunk {
+		return stream.Sync(ctx)
 	}
 
 	return nil
 }
 
-// Commit vectors
-func (api *Stream) Sync(ctx context.Context) (err error) {
-	if len(api.segement.Bag) == 0 {
+// Sync local cache
+func (stream *Stream) Sync(ctx context.Context) (err error) {
+	if err := stream.zip.Close(); err != nil {
+		return err
+	}
+
+	if stream.buf.Len() == 0 {
 		return nil
 	}
 
-	return api.Stack.IO(ctx,
+	return stream.Stack.IO(ctx,
 		http.PUT(
-			ø.URI("%s/ds/%s/%s", api.host, curie.Prefix(api.cask), curie.Reference(api.cask)),
+			ø.URI("%s/ds/%s/%s", stream.host, curie.Prefix(stream.cask), curie.Reference(stream.cask)),
 			ø.Accept.JSON,
-			ø.ContentType.JSON,
-			ø.Send(api.segement),
+			ø.ContentType.Set("application/octet-stream"),
+			ø.Send(stream.buf),
 
 			ƒ.Status.Accepted,
 			func(ctx *http.Context) error {
-				api.segement = segment{Bag: make([]Vector, 0)}
+				stream.buf.Reset()
+				stream.zip.Reset(stream.buf)
 				return nil
 			},
 		),
 	)
+}
+
+// Textual stream client
+type TextStream struct {
+	api    Embeddings
+	stream *Stream
+}
+
+type Embeddings interface {
+	Embedding(ctx context.Context, text string) ([]float32, error)
+}
+
+func NewTextStream(api Embeddings, stream *Stream) *TextStream {
+	return &TextStream{
+		api:    api,
+		stream: stream,
+	}
+}
+
+func (stream *TextStream) Write(ctx context.Context, text string) error {
+	vec, err := stream.api.Embedding(ctx, text)
+	if err != nil {
+		return err
+	}
+
+	hash := sha1.New()
+	hash.Write([]byte(text))
+	uniqueKey := hash.Sum(nil)
+
+	v := Vector{
+		UniqueKey: uniqueKey,
+		Vec:       vec,
+	}
+
+	if err := stream.stream.Write(ctx, v); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (stream *TextStream) Sync(ctx context.Context) (err error) {
+	return stream.stream.Sync(ctx)
 }

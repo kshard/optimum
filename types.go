@@ -15,15 +15,17 @@ import (
 	"github.com/fogfish/schemaorg"
 )
 
-type Casks struct {
-	Items []Cask `json:"items,omitempty"`
+type Instances struct {
+	Items []Instance `json:"items,omitempty"`
 }
 
-type Cask struct {
+type Instance struct {
 	ID      curie.IRI `json:"id"`
 	Opts    string    `json:"opts"`
 	Status  string    `json:"status"`
 	Updated time.Time `json:"updated"`
+	Version string    `json:"version"`
+	Pending string    `json:"pending"`
 }
 
 type create struct {
@@ -32,7 +34,8 @@ type create struct {
 }
 
 type Created struct {
-	Job schemaorg.Url `json:"job"`
+	Version string        `json:"version,omitempty"`
+	Job     schemaorg.Url `json:"job"`
 }
 
 type commit struct {
@@ -40,7 +43,8 @@ type commit struct {
 }
 
 type Committed struct {
-	Job schemaorg.Url `json:"job"`
+	Version string        `json:"version,omitempty"`
+	Job     schemaorg.Url `json:"job"`
 }
 
 type JobStatus struct {
@@ -61,6 +65,7 @@ type Vector struct {
 type Query struct {
 	K        int       `json:"k,omitempty"`
 	EfSearch int       `json:"efSearch,omitempty"`
+	Distance float32   `json:"distance,omitempty"`
 	Query    []float32 `json:"query"`
 }
 
