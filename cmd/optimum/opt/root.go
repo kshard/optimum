@@ -36,6 +36,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&host, "url", "u", "", "url to remote data structure management server")
 	rootCmd.PersistentFlags().StringVarP(&name, "name", "n", "", "unique name of data structure, use only alpha-numeric symbols.")
 	rootCmd.PersistentFlags().StringVarP(&role, "role", "r", "", "access identity, ARN of AWS IAM Role")
+	rootCmd.PersistentFlags().StringVarP(&exid, "external-id", "e", "", "ExternalID associated with the role")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 }
 
@@ -43,6 +44,7 @@ var (
 	host  string
 	name  string
 	role  string
+	exid  string
 	debug bool
 )
 
@@ -92,7 +94,13 @@ func stack() (http.Stack, error) {
 		assumed, err := config.LoadDefaultConfig(context.Background(),
 			config.WithCredentialsProvider(
 				aws.NewCredentialsCache(
-					stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), role),
+					stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), role,
+						func(aro *stscreds.AssumeRoleOptions) {
+							if exid != "" {
+								aro.ExternalID = aws.String(exid)
+							}
+						},
+					),
 				),
 			),
 		)
