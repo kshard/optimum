@@ -10,7 +10,8 @@ require (
 	github.com/fogfish/curie v1.8.2
 	github.com/fogfish/gurl/v2 v2.9.0
 	github.com/fogfish/gurl/x/awsapi v0.0.2
-	github.com/kshard/optimum v0.0.1
+	github.com/fogfish/schemaorg v1.22.0
+	github.com/kshard/optimum v0.1.0
 	github.com/schollz/progressbar/v3 v3.14.5
 	github.com/spf13/cobra v1.8.1
 )
@@ -26,10 +27,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.4 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
-	github.com/fogfish/schemaorg v1.22.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kshard/wreck v0.0.1 // indirect
+	github.com/kshard/wreck v0.0.2 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
