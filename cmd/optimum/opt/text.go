@@ -414,9 +414,8 @@ each line is query to evaluate:
 The file format is identical to the upload textual and can be re-used as is.
 `,
 	Example: `
-optimum hnsw query -u $HOST -n example path/to/query.txt
-optimum hnsw query -u $HOST -r $ROLE -n example path/to/query.txt
-optimum hnsw query -u $HOST -r $ROLE -n example -t path/to/text-map.txt path/to/query.txt
+optimum text query -u $HOST -n example path/to/query.txt
+optimum text query -u $HOST -r $ROLE -n example path/to/query.txt
 `,
 	SilenceUsage: true,
 	Args:         cobra.ExactArgs(1),
