@@ -284,7 +284,7 @@ embedding vectors. Each line of the file should start with unique key, followed
 by the corresponding vector. The unique key length should not exceeding 32 bytes:
 
   example_key_a 0.24116 ... -0.26098 -0.0079604
-	example_key_b 0.34601 ... -0.66865 -0.0486001
+  example_key_b 0.34601 ... -0.66865 -0.0486001
 
 We recommend using sha1, uuid or https://github.com/fogfish/guid as unique key.
 The format allows hexadecimal encoding for keys, if it starts with "0x" prefix.    
@@ -319,8 +319,6 @@ func hnswStream(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	// sentences
-	// surface
 	api := surface.New(cli, host)
 
 	r := io.TeeReader(fd,
