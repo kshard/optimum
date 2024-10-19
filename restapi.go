@@ -25,10 +25,11 @@ type Client struct {
 }
 
 func New(stack http.Stack, host string) *Client {
-	return &Client{
+	cli := &Client{
 		Stack: stack,
 		host:  ø.Authority(host),
 	}
+	return cli
 }
 
 func (api *Client) Casks(ctx context.Context, schema string) (*Instances, error) {
@@ -94,20 +95,6 @@ func (api *Client) Remove(ctx context.Context, cask curie.IRI) error {
 			ø.Accept.JSON,
 
 			ƒ.Status.Accepted,
-		),
-	)
-}
-
-func (api *Client) Query(ctx context.Context, cask curie.IRI, q Query) (*Result, error) {
-	return http.IO[Result](
-		api.WithContext(ctx),
-		http.GET(
-			ø.URI("%s/ds/%s/%s", api.host, curie.Prefix(cask), curie.Reference(cask)),
-			ø.Accept.JSON,
-			ø.ContentType.JSON,
-			ø.Send(q),
-
-			ƒ.Status.OK,
 		),
 	)
 }

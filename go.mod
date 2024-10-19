@@ -6,7 +6,7 @@ require (
 	github.com/fogfish/curie v1.8.2
 	github.com/fogfish/gurl/v2 v2.9.0
 	github.com/fogfish/schemaorg v1.22.0
-	github.com/kshard/wreck v0.0.1
+	github.com/kshard/wreck v0.0.2
 )
 
 require (

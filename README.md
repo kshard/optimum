@@ -93,7 +93,7 @@ Using data structures typically involves a following workflow:
 
 A data structure can be seen as a typed algebraic abstraction that encompasses a collection of data values, the relationships between those values, and the operations or functions that can be applied to manipulate the data. In practical application development, each data structure must be uniquely identifiable to allow efficient access and manipulation. To facilitate this, the application uses a unique reference name called a CURIE (Compact Uniform Resource Identifier). The CURIE combines both the data structure type and a unique identifier, ensuring that the correct data structure is referenced throughout the workflow, enabling smooth interactions within the system.   
 
-See [tutorials](./examples/) for example usage.
+See [tutorials](https://github.com/kshard/optimum-tutorials/tree/main) for example usage.
 
 #### List data structures
 
@@ -110,7 +110,7 @@ example2                   2024-08-18 10:38:13 | PENDING  NjqOYyOkpMHfg3.6 | {}
 
 #### Create data structure instance
 
-Create new instance of data structure. See either documentation of supported
+Create new instance of data structure. See either [documentation](./doc/) of supported
 data structure or `optimum help` for details about configuration parameters.
 
 ```bash
@@ -155,11 +155,12 @@ optimum <type> remove -u $HOST -n <name>
 
 ### Supported data structures
 
-The library supports following data structures:
+The command library supports following data structures:
 * `hnsw` [Hierarchical Navigable Small World](./doc/hnsw.md)
+* `text` [Nearest Neighborhood Search](./doc/text.md)
 
 
-Continue with [examples and tutorials](./examples/).
+Continue with [examples and tutorials](https://github.com/kshard/optimum-tutorials/tree/main).
 
 Note: the command line is only support basic operation for data structure manipulation. Use Golang API for any advanced scenario.
 
@@ -174,31 +175,37 @@ Use `go get` to retrieve the library and add it as dependency to your applicatio
 go get -u github.com/kshard/optimum
 ```
 
+The client library support
+* `optimum` package is control plane to coordinate the instances lifecycle.
+* `optimum/surface` package is data plane for reading/writing Graph-based Nearest Neighbor N-dimensional Surface.
+* `optimum/sentences` package is data plane for reading/writing natural language text and searching for nearest neighbor.
+
+
 ### Quick Example
 
-The example below shows usage of client for Hierarchical Navigable Small World.
+The example below shows usage of client for reading natural language text.
 
 ```go
 package main
 
 import (
-  "github.com/kshard/optimum"
+  "github.com/kshard/optimum/sentences"
   "github.com/fogfish/gurl/v2/http"
   "github.com/fogfish/curie"
 )
 
 const (
   host = "https://example.com"
-  cask = curie.IRI("hnsw:example")
+  cask = curie.IRI("text:example")
 )
 
 func main() {
   // Create client, the library depends on 
-  api := optimum.New(http.New(), host)
+  api := sentences.New(http.New(), host)
 
   // Query the data structure
   neighbors, err := api.Query(context.Background(), cask,
-		optimum.Query{Query: []float32{0.1, 0.2, /* ... */ 0.128}},
+		sentences.Query{Text: "hello world!"},
 	)
   
   // Print results
