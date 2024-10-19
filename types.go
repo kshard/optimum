@@ -55,33 +55,7 @@ type JobStatus struct {
 	Stopped string `json:"stopped,omitempty"`
 }
 
-// Vector format
-type Vector struct {
-	UniqueKey []uint8   `json:"id,omitempty"`
-	SortKey   []uint8   `json:"sk,omitempty"`
-	Vec       []float32 `json:"v"`
-}
-
-type Query struct {
-	K        int       `json:"k,omitempty"`
-	EfSearch int       `json:"efSearch,omitempty"`
-	Distance float32   `json:"distance,omitempty"`
-	Query    []float32 `json:"query"`
-}
-
-type Result struct {
-	Took    time.Duration `json:"took,omitempty"`
-	Version Version       `json:"version,omitempty"`
-	Hits    []Hit         `json:"hits,omitempty"`
-}
-
-type Hit struct {
-	UniqueKey []uint8 `json:"key,omitempty"`
-	SortKey   []uint8 `json:"sort,omitempty"`
-	Rank      float32 `json:"rank"`
-}
-
-type Version struct {
+type Source struct {
 	Cask    string `json:"cask"`
 	Version string `json:"version"`
 	Size    int    `json:"size"`
