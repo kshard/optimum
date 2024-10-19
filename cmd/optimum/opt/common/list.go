@@ -46,9 +46,9 @@ func List(api *optimum.Client, kind string) (err error) {
 		return err
 	}
 
-	fmt.Printf("%-10s\t%-16s %-19s | %-11s %-16s | %s\n", "NAME", "VERSION", "UPDATED AT", "STATUS", "PENDING", "PARAMS")
+	fmt.Printf("%-10s\t%-16s %-19s | %-11s %-16s |\n", "NAME", "VERSION", "UPDATED AT", "STATUS", "PENDING")
 	for _, x := range seq.Items {
-		fmt.Printf("%-10s\t%-16s %-19s | %-11s %-16s | %s\n", curie.Reference(x.ID), x.Version, x.Updated.Format(time.DateTime), x.Status, x.Pending, x.Opts)
+		fmt.Printf("%-10s\t%-16s %-19s | %-11s %-16s |\n", curie.Reference(x.ID), x.Version, x.Updated.Format(time.DateTime), x.Status, x.Pending)
 	}
 
 	return nil

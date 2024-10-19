@@ -20,11 +20,12 @@ import (
 	"github.com/kshard/optimum"
 	"github.com/kshard/optimum/cmd/optimum/encoding"
 	"github.com/kshard/optimum/cmd/optimum/opt/common"
+	"github.com/kshard/optimum/surface"
 	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
-const HNSW_TYPE = "hnsw"
+const TYPE_HNSW = "hnsw"
 
 func init() {
 	rootCmd.AddCommand(hnswCmd)
@@ -39,6 +40,9 @@ func init() {
 	hnswCmd.AddCommand(hnswUploadCmd)
 	hnswUploadCmd.Flags().IntVar(&hnswUploadBuf, "buf", 4, "upload buffer in MB (default 4MB)")
 
+	hnswCmd.AddCommand(hnswStreamCmd)
+	hnswStreamCmd.Flags().IntVar(&hnswChunkSize, "chunk", 100, "streaming chunk size (default 10)")
+
 	hnswCmd.AddCommand(hnswQueryCmd)
 	hnswQueryCmd.Flags().StringVarP(&hnswQueryContent, "text", "t", "", "hash to text associated list, useful for debug purposes")
 
@@ -48,6 +52,7 @@ func init() {
 var (
 	hnswOpts         string
 	hnswUploadBuf    int
+	hnswChunkSize    int
 	hnswQueryContent string
 )
 
@@ -101,7 +106,7 @@ func hnsw(cmd *cobra.Command, args []string) {
 var hnswListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all instances of `hnsw` data structure.",
-	Long:  common.AboutList("hnsw", ""),
+	Long:  common.AboutList(TYPE_HNSW, ""),
 	Example: `
 optimum hnsw list -u $HOST
 optimum hnsw list -u $HOST -r $ROLE
@@ -116,7 +121,7 @@ func hnswList(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	return common.List(optimum.New(cli, host), HNSW_TYPE)
+	return common.List(optimum.New(cli, host), TYPE_HNSW)
 }
 
 //------------------------------------------------------------------------------
@@ -140,7 +145,7 @@ Config algorithm through primary parameters:
 
   - "surface" is vector distance function.
 
-Example configuration:	
+Example configuration and default values:	
   {
     "m":  8,                // number in range of [4, 1024]
     "m0": 64,               // number in range of [4, 1024]
@@ -163,7 +168,7 @@ func hnswCreate(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	return common.Create(optimum.New(cli, host), curie.New("%s:%s", HNSW_TYPE, name), hnswOpts)
+	return common.Create(optimum.New(cli, host), curie.New("%s:%s", TYPE_HNSW, name), hnswOpts)
 }
 
 //------------------------------------------------------------------------------
@@ -171,7 +176,7 @@ func hnswCreate(cmd *cobra.Command, args []string) (err error) {
 var hnswCommitCmd = &cobra.Command{
 	Use:   "commit",
 	Short: "Commit earlier uploaded datasets into `hnsw` instance.",
-	Long:  common.AboutCommit("hnsw", ""),
+	Long:  common.AboutCommit(TYPE_HNSW, ""),
 	Example: `
 optimum hnsw commit -u $HOST -n example
 optimum hnsw commit -u $HOST -r $ROLE -n example
@@ -186,7 +191,7 @@ func hnswCommit(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	return common.Commit(optimum.New(cli, host), curie.New("%s:%s", HNSW_TYPE, name))
+	return common.Commit(optimum.New(cli, host), curie.New("%s:%s", TYPE_HNSW, name))
 }
 
 //------------------------------------------------------------------------------
@@ -235,7 +240,7 @@ func hnswUpload(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	stream := optimum.NewStream(cli, host, curie.New("%s:%s", HNSW_TYPE, name), hnswUploadBuf*1024*1024)
+	stream := surface.NewWriter(cli, host, curie.New("%s:%s", TYPE_HNSW, name), hnswUploadBuf*1024*1024)
 
 	r := io.TeeReader(fd,
 		progressbar.DefaultBytes(
@@ -247,9 +252,9 @@ func hnswUpload(cmd *cobra.Command, args []string) (err error) {
 	scanner := encoding.New(r)
 	for scanner.Scan() {
 		err := stream.Write(context.Background(),
-			optimum.Vector{
+			surface.Vector{
 				UniqueKey: scanner.UniqueKey(),
-				Vec:       scanner.Vector(),
+				Vector:    scanner.Vector(),
 			},
 		)
 		if err != nil {
@@ -262,6 +267,86 @@ func hnswUpload(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if err := stream.Sync(context.Background()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//------------------------------------------------------------------------------
+
+var hnswStreamCmd = &cobra.Command{
+	Use:   "stream",
+	Short: "Stream `hnsw` datasets.",
+	Long: `
+Stream "hnsw" dataset to server. It accepts only textual format to represent
+embedding vectors. Each line of the file should start with unique key, followed
+by the corresponding vector. The unique key length should not exceeding 32 bytes:
+
+  example_key_a 0.24116 ... -0.26098 -0.0079604
+  example_key_b 0.34601 ... -0.66865 -0.0486001
+
+We recommend using sha1, uuid or https://github.com/fogfish/guid as unique key.
+The format allows hexadecimal encoding for keys, if it starts with "0x" prefix.    
+
+  0xd857f9dc157c28e8e07c569c5992dee4f3486b4c -0.097231 ... -0.001681 0.154977
+  0xaeb3e05ab60520cd947455f2130d6cf1f6103243 -0.008007 ... -0.098503 0.057056
+
+`,
+	Example: `
+optimum hnsw stream -u $HOST -n example path/to/data.txt
+optimum hnsw stream -u $HOST -r $ROLE -n example path/to/data.txt
+`,
+	SilenceUsage: true,
+	Args:         cobra.ExactArgs(1),
+	RunE:         hnswStream,
+}
+
+func hnswStream(cmd *cobra.Command, args []string) (err error) {
+	fd, err := os.Open(args[0])
+	if err != nil {
+		return err
+	}
+	defer fd.Close()
+
+	fi, err := fd.Stat()
+	if err != nil {
+		return err
+	}
+
+	cli, err := stack()
+	if err != nil {
+		return err
+	}
+
+	api := surface.New(cli, host)
+
+	r := io.TeeReader(fd,
+		progressbar.DefaultBytes(
+			fi.Size(),
+			"==> uploading",
+		),
+	)
+
+	scanner := encoding.New(r)
+	for scanner.Scan() {
+		bag := make([]surface.Vector, 0)
+		for i, has := 0, true; i < hnswChunkSize && has; i, has = i+1, scanner.Scan() {
+			bag = append(bag, surface.Vector{
+				UniqueKey: scanner.UniqueKey(),
+				Vector:    scanner.Vector(),
+			})
+		}
+
+		if len(bag) > 0 {
+			err := api.Write(context.Background(), curie.New("%s:%s", TYPE_HNSW, name), bag)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
 		return err
 	}
 
@@ -307,18 +392,18 @@ func hnswQuery(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	api := optimum.New(cli, host)
+	api := surface.New(cli, host)
 
 	scanner := encoding.New(fd)
 	for scanner.Scan() {
-		query := optimum.Query{Query: scanner.Vector()}
-		rs, err := api.Query(context.Background(), curie.New("%s:%s", HNSW_TYPE, name), query)
+		query := surface.Query{Query: scanner.Vector()}
+		rs, err := api.Query(context.Background(), curie.New("%s:%s", TYPE_HNSW, name), query)
 		if err != nil {
 			return err
 		}
 
 		id := fmt.Sprintf("0x%x", scanner.UniqueKey())
-		fmt.Printf("Query %s (took %s) | %s (vsn %s, size %d)\n", id, rs.Took, rs.Version.Cask, rs.Version.Version, rs.Version.Size)
+		fmt.Printf("Query %s (took %s) | %s (vsn %s, size %d)\n", id, rs.Took, rs.Source.Cask, rs.Source.Version, rs.Source.Size)
 		for _, hit := range rs.Hits {
 			hid := fmt.Sprintf("0x%x", hit.UniqueKey)
 			fmt.Printf("  %f : %32s \n", hit.Rank, hid)
@@ -374,7 +459,7 @@ func hnswTextValue(hashmap map[string]string, key string) string {
 var hnswRemoveCmd = &cobra.Command{
 	Use:   "remove",
 	Short: "Remove instance of `hnsw` data structure.",
-	Long:  common.AboutRemove("hnsw", ""),
+	Long:  common.AboutRemove(TYPE_HNSW, ""),
 	Example: `
 optimum hnsw commit -u $HOST -n example
 optimum hnsw commit -u $HOST -r $ROLE -n example
@@ -389,5 +474,5 @@ func hnswRemove(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	return common.Remove(optimum.New(cli, host), curie.New("%s:%s", HNSW_TYPE, name))
+	return common.Remove(optimum.New(cli, host), curie.New("%s:%s", TYPE_HNSW, name))
 }
