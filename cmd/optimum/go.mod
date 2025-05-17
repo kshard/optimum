@@ -1,8 +1,6 @@
 module github.com/kshard/optimum/cmd/optimum
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
