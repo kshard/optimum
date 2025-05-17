@@ -45,6 +45,8 @@ func init() {
 	textStreamCmd.Flags().IntVar(&textChunkSize, "chunk", 100, "streaming chunk size (default 10)")
 
 	textCmd.AddCommand(textQueryCmd)
+	textQueryCmd.Flags().StringVarP(&textQueryFile, "file", "f", "", "text queries batch file")
+	textQueryCmd.Flags().IntVar(&textQuerySize, "size", 20, "size of the resultset")
 
 	textCmd.AddCommand(textRemoveCmd)
 }
@@ -53,6 +55,8 @@ var (
 	textOpts      string
 	textUploadBuf int
 	textChunkSize int
+	textQueryFile string
+	textQuerySize int
 )
 
 var textCmd = &cobra.Command{
@@ -414,16 +418,46 @@ each line is query to evaluate:
 The file format is identical to the upload textual and can be re-used as is.
 `,
 	Example: `
-optimum text query -u $HOST -n example path/to/query.txt
-optimum text query -u $HOST -r $ROLE -n example path/to/query.txt
+optimum text query -u $HOST -n example -f path/to/query.txt
+optimum text query -u $HOST -r $ROLE -n example -f path/to/query.txt
+optimum text query -u $HOST -n example "under the roof"
 `,
 	SilenceUsage: true,
-	Args:         cobra.ExactArgs(1),
 	RunE:         textQuery,
 }
 
 func textQuery(cmd *cobra.Command, args []string) (err error) {
-	fd, err := os.Open(args[0])
+	if len(textQueryFile) != 0 {
+		return textQueryWithFile(cmd, args)
+	}
+
+	q := strings.Join(args, " ")
+	if len(q) == 0 {
+		return fmt.Errorf("query is not defined")
+	}
+
+	cli, err := stack()
+	if err != nil {
+		return err
+	}
+
+	api := sentences.New(cli, host)
+
+	query := sentences.Query{Text: q, K: textQuerySize}
+	rs, err := api.Query(context.Background(), curie.New("%s:%s", TYPE_TEXT, name), query)
+	if err != nil {
+		return err
+	}
+
+	for _, hit := range rs.Hits {
+		fmt.Printf("%1.4f : %32s \n", hit.Rank, hit.Text)
+	}
+
+	return nil
+}
+
+func textQueryWithFile(cmd *cobra.Command, args []string) (err error) {
+	fd, err := os.Open(textQueryFile)
 	if err != nil {
 		return err
 	}
@@ -439,7 +473,7 @@ func textQuery(cmd *cobra.Command, args []string) (err error) {
 	n := 1
 	scanner := bufio.NewScanner(fd)
 	for scanner.Scan() {
-		query := sentences.Query{Text: scanner.Text()}
+		query := sentences.Query{Text: scanner.Text(), K: textQuerySize}
 		rs, err := api.Query(context.Background(), curie.New("%s:%s", TYPE_TEXT, name), query)
 		if err != nil {
 			return err

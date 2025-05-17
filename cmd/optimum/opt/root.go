@@ -12,6 +12,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/user"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -20,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fogfish/gurl/v2/http"
 	"github.com/fogfish/gurl/x/awsapi"
+	"github.com/jdxcode/netrc"
 	"github.com/spf13/cobra"
 )
 
@@ -37,15 +40,17 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&name, "name", "n", "", "unique name of data structure, use only alpha-numeric symbols.")
 	rootCmd.PersistentFlags().StringVarP(&role, "role", "r", "", "access identity, ARN of AWS IAM Role")
 	rootCmd.PersistentFlags().StringVarP(&exid, "external-id", "e", "", "ExternalID associated with the role")
+	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "p", "", "the access profile at ~/.aws/config")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 }
 
 var (
-	host  string
-	name  string
-	role  string
-	exid  string
-	debug bool
+	host    string
+	name    string
+	role    string
+	exid    string
+	profile string
+	debug   bool
 )
 
 var rootCmd = &cobra.Command{
@@ -77,39 +82,98 @@ func root(cmd *cobra.Command, args []string) {
 //------------------------------------------------------------------------------
 
 func stack() (http.Stack, error) {
-	opts := []http.Config{}
-
-	if debug {
-		opts = append(opts, http.WithDebugPayload())
+	if role != "" {
+		return stackFromRole()
 	}
 
+	if profile != "" {
+		return stackFromProfile()
+	}
+
+	return stackFromNetRC()
+}
+
+func stackFromConfig(cfg aws.Config) (http.Stack, error) {
+	opts := []http.Option{awsapi.WithSignatureV4(cfg)}
+	if debug {
+		opts = append(opts, http.WithDebugPayload)
+	}
+
+	return http.New(opts...), nil
+}
+
+func stackDefault() (http.Stack, error) {
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	if role == "" {
-		opts = append(opts, awsapi.WithSignatureV4(cfg))
-	} else {
-		assumed, err := config.LoadDefaultConfig(context.Background(),
-			config.WithCredentialsProvider(
-				aws.NewCredentialsCache(
-					stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), role,
-						func(aro *stscreds.AssumeRoleOptions) {
-							if exid != "" {
-								aro.ExternalID = aws.String(exid)
-							}
-						},
-					),
-				),
-			),
-		)
-		if err != nil {
-			return nil, err
-		}
+	return stackFromConfig(cfg)
+}
 
-		opts = append(opts, awsapi.WithSignatureV4(assumed))
+func stackFromProfile() (http.Stack, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithSharedConfigProfile(profile)) // config.WithClientLogMode(aws.LogRequestWithBody|aws.LogResponseWithBody),
+
+	if err != nil {
+		return nil, err
 	}
 
-	return http.New(opts...), nil
+	return stackFromConfig(cfg)
+}
+
+func stackFromRole() (http.Stack, error) {
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	assumed, err := config.LoadDefaultConfig(context.Background(),
+		config.WithCredentialsProvider(
+			aws.NewCredentialsCache(
+				stscreds.NewAssumeRoleProvider(sts.NewFromConfig(cfg), role,
+					func(aro *stscreds.AssumeRoleOptions) {
+						if exid != "" {
+							aro.ExternalID = aws.String(exid)
+						}
+					},
+				),
+			),
+		),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return stackFromConfig(assumed)
+}
+
+func stackFromNetRC() (http.Stack, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+
+	file := filepath.Join(usr.HomeDir, ".netrc")
+	n, err := netrc.Parse(file)
+	if err != nil {
+		return nil, err
+	}
+
+	machine := n.Machine("optimum")
+	if machine == nil {
+		return stackDefault()
+	}
+
+	// .netrc defines default url & datastore name
+	if len(host) == 0 {
+		host = machine.Get("host")
+	}
+
+	// Using AWS profile
+	profile = machine.Get("profile")
+	if len(profile) == 0 {
+		return stackDefault()
+	}
+
+	return stackFromProfile()
 }
